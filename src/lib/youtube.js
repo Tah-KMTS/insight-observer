@@ -16,6 +16,24 @@ Return ONLY a raw JSON object (no markdown fences, no extra text) with exactly t
 - "transcript" should be the full spoken dialogue/transcript of the video, as accurately as you can retrieve it. If no transcript or captions are available, use an empty string.
 Do not include any text before or after the JSON object.`
 
+export function extractVideoId(videoUrl) {
+  try {
+    const parsed = new URL(videoUrl)
+    if (parsed.hostname.includes('youtu.be')) {
+      return parsed.pathname.slice(1) || null
+    }
+    const vParam = parsed.searchParams.get('v')
+    if (vParam) return vParam
+
+    const embedMatch = parsed.pathname.match(/\/embed\/([^/?]+)/)
+    if (embedMatch) return embedMatch[1]
+
+    return null
+  } catch {
+    return null
+  }
+}
+
 export async function fetchYoutubeMetadata(videoUrl) {
   const apiKey = import.meta.env.VITE_OPENAI_API_KEY
   if (!apiKey) {

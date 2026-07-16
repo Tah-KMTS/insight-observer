@@ -1,9 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
-import { fetchYoutubeMetadata } from './lib/youtube'
+import { extractVideoId, fetchYoutubeMetadata } from './lib/youtube'
 import './App.css'
 
 const CAPTURE_INTERVAL_MS = 3000
 const MAX_FRAMES = 8
+
+function formatVideoTime(seconds) {
+  const whole = Math.floor(seconds)
+  const mm = String(Math.floor(whole / 60)).padStart(2, '0')
+  const ss = String(whole % 60).padStart(2, '0')
+  return `${mm}:${ss}`
+}
 
 function App() {
   const [url, setUrl] = useState('')
@@ -15,22 +22,35 @@ function App() {
   const [webcamStatus, setWebcamStatus] = useState('')
   const [frames, setFrames] = useState([])
 
+  const [videoId, setVideoId] = useState(null)
+  const [playerReady, setPlayerReady] = useState(false)
+  const [isPlaying, setIsPlaying] = useState(false)
+
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const streamRef = useRef(null)
   const intervalRef = useRef(null)
 
+  const ytApiReadyRef = useRef(false)
+  const ytContainerRef = useRef(null)
+  const playerRef = useRef(null)
+  const isPlayingRef = useRef(false)
+
   function captureFrame() {
     const video = videoRef.current
     const canvas = canvasRef.current
     if (!video || !canvas || video.videoWidth === 0) return
+    if (playerRef.current && !isPlayingRef.current) return
 
     canvas.width = video.videoWidth
     canvas.height = video.videoHeight
     canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height)
 
     const dataUrl = canvas.toDataURL('image/jpeg', 0.8)
-    setFrames((prev) => [...prev, { id: Date.now(), dataUrl, time: new Date().toLocaleTimeString() }].slice(-MAX_FRAMES))
+    const time = playerRef.current
+      ? `video ${formatVideoTime(playerRef.current.getCurrentTime())}`
+      : new Date().toLocaleTimeString()
+    setFrames((prev) => [...prev, { id: Date.now(), dataUrl, time }].slice(-MAX_FRAMES))
   }
 
   async function startWebcam() {
@@ -63,6 +83,70 @@ function App() {
 
   useEffect(() => stopWebcam, [])
 
+  // Load the YouTube IFrame API once.
+  useEffect(() => {
+    if (window.YT && window.YT.Player) {
+      ytApiReadyRef.current = true
+      return
+    }
+    const previousCallback = window.onYouTubeIframeAPIReady
+    window.onYouTubeIframeAPIReady = () => {
+      ytApiReadyRef.current = true
+      previousCallback?.()
+      setPlayerReady((ready) => ready)
+    }
+    if (!document.querySelector('script[src="https://www.youtube.com/iframe_api"]')) {
+      const tag = document.createElement('script')
+      tag.src = 'https://www.youtube.com/iframe_api'
+      document.body.appendChild(tag)
+    }
+  }, [])
+
+  // Create or reload the player whenever we have a new video ID.
+  useEffect(() => {
+    if (!videoId) return
+
+    function createOrLoad() {
+      if (!ytContainerRef.current) return
+      if (playerRef.current) {
+        playerRef.current.loadVideoById(videoId)
+        return
+      }
+      playerRef.current = new window.YT.Player(ytContainerRef.current, {
+        videoId,
+        width: 480,
+        height: 270,
+        events: {
+          onReady: () => setPlayerReady(true),
+          onStateChange: (event) => {
+            const playing = event.data === window.YT.PlayerState.PLAYING
+            isPlayingRef.current = playing
+            setIsPlaying(playing)
+          },
+        },
+      })
+    }
+
+    if (ytApiReadyRef.current) {
+      createOrLoad()
+    } else {
+      const previousCallback = window.onYouTubeIframeAPIReady
+      window.onYouTubeIframeAPIReady = () => {
+        ytApiReadyRef.current = true
+        previousCallback?.()
+        createOrLoad()
+      }
+    }
+  }, [videoId])
+
+  useEffect(
+    () => () => {
+      playerRef.current?.destroy?.()
+      playerRef.current = null
+    },
+    [],
+  )
+
   async function handleFetch() {
     if (!url.trim()) {
       setStatus('Paste a YouTube URL first.')
@@ -77,6 +161,7 @@ function App() {
       const data = await fetchYoutubeMetadata(url.trim())
       setMetadata(data)
       setStatus('Done.')
+      setVideoId(extractVideoId(url.trim()))
     } catch (error) {
       console.error(error)
       setStatus(error.message || 'Something went wrong.')
@@ -118,7 +203,22 @@ function App() {
         </div>
       )}
 
-      <h1>Step 2: Webcam Capture</h1>
+      {videoId && (
+        <div style={{ marginTop: '1rem' }}>
+          <div ref={ytContainerRef} />
+          <p style={{ fontSize: '0.85rem' }}>
+            {playerReady ? (isPlaying ? 'Video playing.' : 'Video paused.') : 'Loading player…'}
+          </p>
+        </div>
+      )}
+
+      <h1>Step 2/3: Webcam Capture Synced to Video</h1>
+
+      <p style={{ fontSize: '0.85rem' }}>
+        {videoId
+          ? 'Frames capture only while the video is playing, tagged with the video timestamp.'
+          : 'Fetch a video above to tag frames with video time; without one, capture just runs on a timer.'}
+      </p>
 
       <div style={{ display: 'flex', gap: '0.5rem' }}>
         <button type="button" onClick={startWebcam} disabled={webcamActive}>
