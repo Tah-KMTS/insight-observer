@@ -1,5 +1,7 @@
 import OpenAI from 'openai'
 
+export const MODEL = 'gpt-5.6'
+
 export function createClient() {
   const apiKey = import.meta.env.VITE_OPENAI_API_KEY
   if (!apiKey) {

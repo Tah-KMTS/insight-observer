@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { extractVideoId, fetchYoutubeMetadata } from './lib/youtube'
-import { analyzeReactionFrame } from './lib/analysis'
+import { generateVisualEvaluation } from './lib/visualEvaluation'
+import { buildInterviewSystemPrompt, getInterviewReply } from './lib/interview'
+import { buildFinalSynthesisPrompt, generateFinalReport } from './lib/finalSynthesis'
 import './App.css'
 
-const CAPTURE_INTERVAL_MS = 3000
-const MAX_FRAMES = 8
+const MAX_FRAMES = 20
+const FALLBACK_CAPTURE_INTERVAL_MS = 3000
 
 function formatVideoTime(seconds) {
   const whole = Math.floor(seconds)
@@ -27,6 +29,20 @@ function App() {
   const [playerReady, setPlayerReady] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
 
+  const [visualEvaluation, setVisualEvaluation] = useState(null)
+  const [evaluating, setEvaluating] = useState(false)
+  const [evalStatus, setEvalStatus] = useState('')
+
+  const [interviewStarted, setInterviewStarted] = useState(false)
+  const [chatMessages, setChatMessages] = useState([])
+  const [chatInput, setChatInput] = useState('')
+  const [chatSending, setChatSending] = useState(false)
+  const [chatStatus, setChatStatus] = useState('')
+
+  const [finalReport, setFinalReport] = useState(null)
+  const [synthesizing, setSynthesizing] = useState(false)
+  const [synthesisStatus, setSynthesisStatus] = useState('')
+
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const streamRef = useRef(null)
@@ -36,6 +52,7 @@ function App() {
   const ytContainerRef = useRef(null)
   const playerRef = useRef(null)
   const isPlayingRef = useRef(false)
+  const metadataRef = useRef(null)
 
   function captureFrame() {
     const video = videoRef.current
@@ -51,22 +68,7 @@ function App() {
     const time = playerRef.current
       ? `video ${formatVideoTime(playerRef.current.getCurrentTime())}`
       : new Date().toLocaleTimeString()
-    setFrames((prev) => [...prev, { id: Date.now(), dataUrl, time, analysis: null }].slice(-MAX_FRAMES))
-  }
-
-  function updateFrame(id, patch) {
-    setFrames((prev) => prev.map((frame) => (frame.id === id ? { ...frame, ...patch } : frame)))
-  }
-
-  async function handleAnalyze(frame) {
-    updateFrame(frame.id, { analysis: 'pending' })
-    try {
-      const result = await analyzeReactionFrame(frame.dataUrl)
-      updateFrame(frame.id, { analysis: result })
-    } catch (error) {
-      console.error(error)
-      updateFrame(frame.id, { analysis: { error: error.message || 'Analysis failed.' } })
-    }
+    setFrames((prev) => [...prev, { id: Date.now(), dataUrl, time }].slice(-MAX_FRAMES))
   }
 
   async function startWebcam() {
@@ -76,8 +78,14 @@ function App() {
       streamRef.current = stream
       if (videoRef.current) videoRef.current.srcObject = stream
       setWebcamActive(true)
-      setWebcamStatus('Webcam on — capturing a frame every 3s.')
-      intervalRef.current = setInterval(captureFrame, CAPTURE_INTERVAL_MS)
+
+      const duration = metadataRef.current?.durationSeconds
+      const captureIntervalMs = duration
+        ? Math.max(2000, Math.round((duration * 1000) / MAX_FRAMES))
+        : FALLBACK_CAPTURE_INTERVAL_MS
+
+      setWebcamStatus(`Webcam on — capturing up to ${MAX_FRAMES} frames spaced across the video.`)
+      intervalRef.current = setInterval(captureFrame, captureIntervalMs)
     } catch (error) {
       setWebcamStatus(error.message || 'Could not access the webcam.')
     }
@@ -109,7 +117,6 @@ function App() {
     window.onYouTubeIframeAPIReady = () => {
       ytApiReadyRef.current = true
       previousCallback?.()
-      setPlayerReady((ready) => ready)
     }
     if (!document.querySelector('script[src="https://www.youtube.com/iframe_api"]')) {
       const tag = document.createElement('script')
@@ -172,10 +179,19 @@ function App() {
     setLoading(true)
     setStatus('Fetching video metadata…')
     setMetadata(null)
+    setFrames([])
+    setVisualEvaluation(null)
+    setEvalStatus('')
+    setInterviewStarted(false)
+    setChatMessages([])
+    setChatStatus('')
+    setFinalReport(null)
+    setSynthesisStatus('')
 
     try {
       const data = await fetchYoutubeMetadata(url.trim())
       setMetadata(data)
+      metadataRef.current = data
       setStatus('Done.')
       setVideoId(extractVideoId(url.trim()))
     } catch (error) {
@@ -186,9 +202,83 @@ function App() {
     }
   }
 
+  async function handleGetVisualEvaluation() {
+    setEvaluating(true)
+    setEvalStatus('Analyzing captured frames…')
+    setVisualEvaluation(null)
+    try {
+      const text = await generateVisualEvaluation(frames)
+      setVisualEvaluation(text)
+      setEvalStatus('Done.')
+    } catch (error) {
+      console.error(error)
+      setEvalStatus(error.message || 'Visual evaluation failed.')
+    } finally {
+      setEvaluating(false)
+    }
+  }
+
+  async function handleStartInterview() {
+    setInterviewStarted(true)
+    setChatMessages([])
+    setChatStatus('Starting interview…')
+    setChatSending(true)
+    try {
+      const systemPrompt = buildInterviewSystemPrompt(metadata, visualEvaluation)
+      const opening = await getInterviewReply(systemPrompt, [
+        { role: 'user', content: 'Please start the interview with your first question.' },
+      ])
+      setChatMessages([{ role: 'assistant', content: opening }])
+      setChatStatus('')
+    } catch (error) {
+      console.error(error)
+      setChatStatus(error.message || 'Could not start the interview.')
+    } finally {
+      setChatSending(false)
+    }
+  }
+
+  async function handleSendChat() {
+    const text = chatInput.trim()
+    if (!text) return
+
+    const nextMessages = [...chatMessages, { role: 'user', content: text }]
+    setChatMessages(nextMessages)
+    setChatInput('')
+    setChatSending(true)
+    setChatStatus('')
+    try {
+      const systemPrompt = buildInterviewSystemPrompt(metadata, visualEvaluation)
+      const reply = await getInterviewReply(systemPrompt, nextMessages)
+      setChatMessages((prev) => [...prev, { role: 'assistant', content: reply }])
+    } catch (error) {
+      console.error(error)
+      setChatStatus(error.message || 'Could not get a reply.')
+    } finally {
+      setChatSending(false)
+    }
+  }
+
+  async function handleEndChat() {
+    setSynthesizing(true)
+    setSynthesisStatus('Writing final report…')
+    setFinalReport(null)
+    try {
+      const prompt = buildFinalSynthesisPrompt(metadata, visualEvaluation, chatMessages)
+      const report = await generateFinalReport(prompt)
+      setFinalReport(report)
+      setSynthesisStatus('')
+    } catch (error) {
+      console.error(error)
+      setSynthesisStatus(error.message || 'Final synthesis failed.')
+    } finally {
+      setSynthesizing(false)
+    }
+  }
+
   return (
     <div style={{ maxWidth: 640, margin: '2rem auto', padding: '0 1rem', fontFamily: 'sans-serif' }}>
-      <h1>Insight Observer — Step 1: YouTube Metadata</h1>
+      <h1>Insight Observer — YouTube Video Metadata</h1>
 
       <div style={{ display: 'flex', gap: '0.5rem' }}>
         <input
@@ -228,12 +318,11 @@ function App() {
         </div>
       )}
 
-      <h1>Step 2/3: Webcam Capture Synced to Video</h1>
+      <h1>Visual Evaluation</h1>
 
       <p style={{ fontSize: '0.85rem' }}>
-        {videoId
-          ? 'Frames capture only while the video is playing, tagged with the video timestamp.'
-          : 'Fetch a video above to tag frames with video time; without one, capture just runs on a timer.'}
+        Watch the video with your webcam on. Up to {MAX_FRAMES} frames are captured, spaced across the video's
+        duration, only while it's playing.
       </p>
 
       <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -258,37 +347,110 @@ function App() {
 
       {frames.length > 0 && (
         <div>
-          <h1>Step 4: Reaction Analysis</h1>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+          <h3>Captured frames ({frames.length}/{MAX_FRAMES})</h3>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
             {frames.map((frame) => (
-              <div key={frame.id} style={{ width: 140 }}>
-                <img src={frame.dataUrl} alt={`Frame at ${frame.time}`} style={{ width: 140, borderRadius: 4 }} />
-                <p style={{ fontSize: '0.75rem', textAlign: 'center' }}>{frame.time}</p>
-                <button
-                  type="button"
-                  onClick={() => handleAnalyze(frame)}
-                  disabled={frame.analysis === 'pending'}
-                  style={{ width: '100%' }}
-                >
-                  {frame.analysis === 'pending' ? 'Analyzing…' : 'Analyze'}
-                </button>
-                {frame.analysis && frame.analysis !== 'pending' && (
-                  <p style={{ fontSize: '0.75rem', marginTop: '0.25rem' }}>
-                    {frame.analysis.error ? (
-                      <span style={{ color: 'tomato' }}>{frame.analysis.error}</span>
-                    ) : (
-                      <>
-                        <strong>{frame.analysis.emotion}</strong>
-                        <br />
-                        {frame.analysis.note}
-                      </>
-                    )}
-                  </p>
-                )}
+              <div key={frame.id}>
+                <img src={frame.dataUrl} alt={`Frame at ${frame.time}`} style={{ width: 100, borderRadius: 4 }} />
+                <p style={{ fontSize: '0.7rem', textAlign: 'center' }}>{frame.time}</p>
               </div>
             ))}
           </div>
+
+          <button type="button" onClick={handleGetVisualEvaluation} disabled={evaluating} style={{ marginTop: '0.5rem' }}>
+            {evaluating ? 'Evaluating…' : 'Get Visual Evaluation'}
+          </button>
+          <p>{evalStatus}</p>
         </div>
+      )}
+
+      {visualEvaluation && (
+        <div
+          style={{
+            marginTop: '1rem',
+            padding: '1rem',
+            border: '1px solid #444',
+            borderRadius: 6,
+            whiteSpace: 'pre-wrap',
+            lineHeight: 1.5,
+          }}
+        >
+          {visualEvaluation}
+        </div>
+      )}
+
+      <h1>Interview</h1>
+
+      <button type="button" onClick={handleStartInterview} disabled={!visualEvaluation || chatSending}>
+        Start Interview
+      </button>
+      <p>{chatStatus}</p>
+
+      {interviewStarted && (
+        <div style={{ marginTop: '1rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {chatMessages.map((message, index) => (
+              <div
+                key={index}
+                style={{
+                  alignSelf: message.role === 'user' ? 'flex-end' : 'flex-start',
+                  background: message.role === 'user' ? '#2a4' : '#333',
+                  color: '#fff',
+                  padding: '0.5rem 0.75rem',
+                  borderRadius: 8,
+                  maxWidth: '80%',
+                }}
+              >
+                {message.content}
+              </div>
+            ))}
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+            <input
+              type="text"
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSendChat()
+              }}
+              placeholder="Type your reply…"
+              style={{ flex: 1, padding: '0.5rem' }}
+              disabled={chatSending}
+            />
+            <button type="button" onClick={handleSendChat} disabled={chatSending}>
+              Send
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleEndChat}
+            disabled={chatMessages.length === 0 || synthesizing}
+            style={{ marginTop: '0.75rem' }}
+          >
+            End Chat
+          </button>
+          <p>{synthesisStatus}</p>
+        </div>
+      )}
+
+      <h1>Final Synthesis</h1>
+
+      {finalReport ? (
+        <div
+          style={{
+            padding: '1rem',
+            border: '1px solid #444',
+            borderRadius: 6,
+            whiteSpace: 'pre-wrap',
+            lineHeight: 1.5,
+          }}
+        >
+          {finalReport}
+        </div>
+      ) : (
+        <p style={{ fontSize: '0.85rem' }}>Finish an interview and click "End Chat" to generate the final report.</p>
       )}
     </div>
   )

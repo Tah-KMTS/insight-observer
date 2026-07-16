@@ -1,0 +1,36 @@
+Here is everything gathered about a viewer who just watched a YouTube video and was interviewed about their reaction.
+
+VIDEO METADATA
+Title: The Odyssey | Official Trailer
+Duration: 114 seconds
+Description: The Odyssey - In Theaters 07.17.26
+
+Christopher Nolan’s next film, The Odyssey, is a mythic action epic shot across the world using brand new IMAX film technology. The film brings Homer’s foundational saga to IMAX film screens for the first time and opens in theaters everywhere on July 17, 2026.
+
+The Odyssey stars Matt Damon, Tom Holland, Anne Hathaway, Robert Pattinson and Lupita Nyong’o, with Zendaya and Charlize Theron.
+
+The Odyssey is produced by Emma Thomas and Christopher Nolan for their company, Syncopy. The executive producer is Thomas Hayslip.
+Transcript: After years of war, no one could stand between my men and home. Not even me. Promise me you'll come back. What if I can't?
+
+VISUAL EVALUATION (from webcam analysis while they watched)
+Overall summary:
+The viewer showed mostly neutral, subdued engagement. He initially looked downward, briefly watched the screen directly, then spent much of the video focused on a colorful object held in front of him. No strong emotional reactions were visible.
+
+Notable moments:
+- 00:03 - Looked downward with a neutral, focused expression.
+- 00:08 - Continued looking down; a very faint smile or softened expression appeared.
+- 00:14 - Looked up toward the screen with slightly widened eyes, appearing attentive.
+- 00:20 - Returned to a neutral expression and downward gaze.
+- 00:25–00:31 - Faced the screen steadily, calm and unsmiling.
+- 00:37–01:34 - Held up a colorful object and looked down at it intently; visible features remained neutral and concentrated.
+- 01:40–01:45 - Turned his gaze down and to the side while continuing to examine the object.
+- 01:51 - Lowered the object and looked directly toward the screen again with a neutral, attentive expression.
+
+INTERVIEW TRANSCRIPT
+Interviewer: Around 0:14, you looked up with slightly widened eyes. What caught your attention?
+Viewer: I liked the visuals, the cinematography looked stunning and epic.
+Interviewer: What, if anything, did you dislike about the trailer?
+Viewer: Not much really, maybe the pacing felt a bit rushed for a trailer.
+Interviewer: You looked away from 0:37 to 1:34. Did the rushed pacing make it hard to stay engaged?
+
+Write a final written sentiment report describing how the viewer felt about the video overall. Integrate what they said in the interview with what was observed visually. Structure it with a short headline sentiment on its own line, then supporting detail in plain paragraphs. Do not use markdown syntax (no #, *, or **) — plain text only. Keep it under 300 words.
