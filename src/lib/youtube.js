@@ -1,4 +1,4 @@
-import OpenAI from 'openai'
+import { createClient, parseModelJson } from './openaiClient'
 
 const MODEL = 'gpt-5.6'
 
@@ -35,12 +35,7 @@ export function extractVideoId(videoUrl) {
 }
 
 export async function fetchYoutubeMetadata(videoUrl) {
-  const apiKey = import.meta.env.VITE_OPENAI_API_KEY
-  if (!apiKey) {
-    throw new Error('Add your API key to .env as VITE_OPENAI_API_KEY, then restart npm run dev.')
-  }
-
-  const client = new OpenAI({ apiKey, dangerouslyAllowBrowser: true })
+  const client = createClient()
 
   const response = await client.responses.create({
     model: MODEL,
@@ -48,22 +43,7 @@ export async function fetchYoutubeMetadata(videoUrl) {
     input: EXTRACTION_PROMPT(videoUrl),
   })
 
-  const text = response.output_text?.trim()
-  if (!text) {
-    throw new Error('The model returned no output.')
-  }
-
-  const jsonText = text
-    .replace(/^```(?:json)?/i, '')
-    .replace(/```$/, '')
-    .trim()
-
-  let data
-  try {
-    data = JSON.parse(jsonText)
-  } catch (err) {
-    throw new Error(`Could not parse the model's response as JSON: ${err.message}\n\nRaw response: ${text.slice(0, 300)}`)
-  }
+  const data = parseModelJson(response.output_text)
 
   return {
     title: data.title || '',

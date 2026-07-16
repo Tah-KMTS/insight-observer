@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { extractVideoId, fetchYoutubeMetadata } from './lib/youtube'
+import { analyzeReactionFrame } from './lib/analysis'
 import './App.css'
 
 const CAPTURE_INTERVAL_MS = 3000
@@ -50,7 +51,22 @@ function App() {
     const time = playerRef.current
       ? `video ${formatVideoTime(playerRef.current.getCurrentTime())}`
       : new Date().toLocaleTimeString()
-    setFrames((prev) => [...prev, { id: Date.now(), dataUrl, time }].slice(-MAX_FRAMES))
+    setFrames((prev) => [...prev, { id: Date.now(), dataUrl, time, analysis: null }].slice(-MAX_FRAMES))
+  }
+
+  function updateFrame(id, patch) {
+    setFrames((prev) => prev.map((frame) => (frame.id === id ? { ...frame, ...patch } : frame)))
+  }
+
+  async function handleAnalyze(frame) {
+    updateFrame(frame.id, { analysis: 'pending' })
+    try {
+      const result = await analyzeReactionFrame(frame.dataUrl)
+      updateFrame(frame.id, { analysis: result })
+    } catch (error) {
+      console.error(error)
+      updateFrame(frame.id, { analysis: { error: error.message || 'Analysis failed.' } })
+    }
   }
 
   async function startWebcam() {
@@ -242,12 +258,33 @@ function App() {
 
       {frames.length > 0 && (
         <div>
-          <h3>Captured frames</h3>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <h1>Step 4: Reaction Analysis</h1>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
             {frames.map((frame) => (
-              <div key={frame.id}>
-                <img src={frame.dataUrl} alt={`Frame at ${frame.time}`} style={{ width: 120, borderRadius: 4 }} />
+              <div key={frame.id} style={{ width: 140 }}>
+                <img src={frame.dataUrl} alt={`Frame at ${frame.time}`} style={{ width: 140, borderRadius: 4 }} />
                 <p style={{ fontSize: '0.75rem', textAlign: 'center' }}>{frame.time}</p>
+                <button
+                  type="button"
+                  onClick={() => handleAnalyze(frame)}
+                  disabled={frame.analysis === 'pending'}
+                  style={{ width: '100%' }}
+                >
+                  {frame.analysis === 'pending' ? 'Analyzing…' : 'Analyze'}
+                </button>
+                {frame.analysis && frame.analysis !== 'pending' && (
+                  <p style={{ fontSize: '0.75rem', marginTop: '0.25rem' }}>
+                    {frame.analysis.error ? (
+                      <span style={{ color: 'tomato' }}>{frame.analysis.error}</span>
+                    ) : (
+                      <>
+                        <strong>{frame.analysis.emotion}</strong>
+                        <br />
+                        {frame.analysis.note}
+                      </>
+                    )}
+                  </p>
+                )}
               </div>
             ))}
           </div>
