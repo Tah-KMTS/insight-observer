@@ -1,121 +1,68 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
+import { fetchYoutubeMetadata } from './lib/youtube'
 import './App.css'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [url, setUrl] = useState('')
+  const [metadata, setMetadata] = useState(null)
+  const [status, setStatus] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  async function handleFetch() {
+    if (!url.trim()) {
+      setStatus('Paste a YouTube URL first.')
+      return
+    }
+
+    setLoading(true)
+    setStatus('Fetching video metadata…')
+    setMetadata(null)
+
+    try {
+      const data = await fetchYoutubeMetadata(url.trim())
+      setMetadata(data)
+      setStatus('Done.')
+    } catch (error) {
+      console.error(error)
+      setStatus(error.message || 'Something went wrong.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
+    <div style={{ maxWidth: 640, margin: '2rem auto', padding: '0 1rem', fontFamily: 'sans-serif' }}>
+      <h1>Insight Observer — Step 1: YouTube Metadata</h1>
+
+      <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <input
+          type="text"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder="Paste a YouTube URL"
+          style={{ flex: 1, padding: '0.5rem' }}
+        />
+        <button type="button" onClick={handleFetch} disabled={loading}>
+          {loading ? 'Fetching…' : 'Fetch Metadata'}
+        </button>
+      </div>
+
+      <p>{status}</p>
+
+      {metadata && (
+        <div style={{ marginTop: '1rem', whiteSpace: 'pre-wrap' }}>
+          <h3>{metadata.title}</h3>
+          <p>Duration: {metadata.durationSeconds} seconds</p>
+          <p><strong>Description:</strong> {metadata.description}</p>
           <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
+            <strong>Transcript ({metadata.transcript.length} chars):</strong>
+            <br />
+            {metadata.transcript.slice(0, 500)}
+            {metadata.transcript.length > 500 ? '…' : ''}
           </p>
         </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      )}
+    </div>
   )
 }
 
