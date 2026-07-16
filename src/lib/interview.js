@@ -1,4 +1,6 @@
-import { createClient, MODEL } from './openaiClient'
+import { createClient } from './openaiClient'
+
+const MODEL = 'gpt-5.6'
 
 export function buildInterviewSystemPrompt(metadata, visualEvaluation) {
   return `You are interviewing someone right after they watched this YouTube video:

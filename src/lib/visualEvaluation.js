@@ -1,4 +1,6 @@
-import { createClient, MODEL } from './openaiClient'
+import { createClient } from './openaiClient'
+
+const MODEL = 'gpt-5.6'
 
 const INSTRUCTIONS = `You are analyzing a sequence of webcam snapshots taken while someone watched a video. Each image is labeled with the video timestamp when it was captured, in chronological order.
 

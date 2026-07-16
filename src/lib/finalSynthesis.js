@@ -1,4 +1,6 @@
-import { createClient, MODEL } from './openaiClient'
+import { createClient } from './openaiClient'
+
+const MODEL = 'gpt-5.6'
 
 export function buildFinalSynthesisPrompt(metadata, visualEvaluation, chatMessages) {
   const interviewTranscript = chatMessages

@@ -1,4 +1,6 @@
-import { createClient, parseModelJson, MODEL } from './openaiClient'
+import { createClient, parseModelJson } from './openaiClient'
+
+const MODEL = 'gpt-5.6'
 
 const EXTRACTION_PROMPT = (videoUrl) => `Open this YouTube video and extract its metadata: ${videoUrl}
 
