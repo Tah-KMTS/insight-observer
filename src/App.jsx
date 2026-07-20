@@ -15,6 +15,18 @@ function formatVideoTime(seconds) {
   return `${mm}:${ss}`
 }
 
+function renderInlineMarkdown(text) {
+  return text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g).map((token, index) => {
+    if (token.startsWith('**') && token.endsWith('**')) {
+      return <strong key={index}>{token.slice(2, -2)}</strong>
+    }
+    if (token.startsWith('*') && token.endsWith('*')) {
+      return <em key={index}>{token.slice(1, -1)}</em>
+    }
+    return token
+  })
+}
+
 function App() {
   const [url, setUrl] = useState('')
   const [metadata, setMetadata] = useState(null)
@@ -495,7 +507,7 @@ function App() {
               {chatMessages.map((message, index) => (
                 <div key={index} className={`podcast-bubble ${message.role === 'user' ? 'guest' : 'host'}`}>
                   <span className="podcast-speaker">{message.role === 'user' ? '🗣️ You' : '🎙️ Host'}</span>
-                  {message.content}
+                  {renderInlineMarkdown(message.content)}
                 </div>
               ))}
             </div>
