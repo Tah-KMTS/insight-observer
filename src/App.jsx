@@ -57,6 +57,7 @@ function App() {
   const playerRef = useRef(null)
   const isPlayingRef = useRef(false)
   const metadataRef = useRef(null)
+  const onVideoEndedRef = useRef(() => {})
 
   function captureFrame() {
     const video = videoRef.current
@@ -146,6 +147,22 @@ function App() {
     [],
   )
 
+  function handleVideoEnded() {
+    if (!webcamActive) return
+    stopWebcam()
+    setWebcamStatus('Trailer ended — recording stopped, evaluating your reaction…')
+    if (frames.length > 0) {
+      handleGetVisualEvaluation()
+    }
+  }
+
+  // Keep a live reference to handleVideoEnded so the YouTube player's onStateChange
+  // callback (attached once, at player creation) always calls the latest version
+  // instead of one closed over stale state.
+  useEffect(() => {
+    onVideoEndedRef.current = handleVideoEnded
+  })
+
   // Load the YouTube IFrame API once.
   useEffect(() => {
     if (window.YT && window.YT.Player) {
@@ -184,6 +201,9 @@ function App() {
             const playing = event.data === window.YT.PlayerState.PLAYING
             isPlayingRef.current = playing
             setIsPlaying(playing)
+            if (event.data === window.YT.PlayerState.ENDED) {
+              onVideoEndedRef.current?.()
+            }
           },
         },
       })
