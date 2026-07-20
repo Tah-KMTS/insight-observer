@@ -161,6 +161,37 @@
   }
 }
 
+.masthead {
+  text-align: center;
+  padding: 1rem 0 0;
+}
+
+.masthead-title {
+  margin: 0;
+  font-size: 2.25rem;
+}
+
+.masthead-tag {
+  margin: 0.35rem 0 0;
+  opacity: 0.7;
+  font-size: 0.95rem;
+}
+
+.film-strip {
+  height: 10px;
+  margin: 1.25rem 0;
+  border-radius: 4px;
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--text-h) 0,
+    var(--text-h) 6px,
+    transparent 6px,
+    transparent 14px
+  );
+  opacity: 0.15;
+}
+
+.segment-card,
 .podcast-card {
   text-align: left;
   border: 1px solid var(--border);
@@ -168,6 +199,57 @@
   padding: 1rem;
   margin-top: 0.75rem;
   background: var(--code-bg);
+}
+
+.segment-eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.segment-heading {
+  margin: 0 0 0.75rem;
+  font-size: 1.15rem;
+}
+
+.status-line {
+  font-size: 0.85rem;
+  font-style: italic;
+  opacity: 0.75;
+  margin-top: 0.35rem;
+}
+
+.btn {
+  font: inherit;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--accent-border);
+  background: var(--accent-bg);
+  color: var(--text-h);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--accent-border);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #1a1206;
+  font-weight: 600;
+}
+
+.btn-primary:hover:not(:disabled) {
+  filter: brightness(1.08);
 }
 
 .podcast-header {
@@ -206,7 +288,7 @@
 .on-air-badge {
   font-size: 0.7rem;
   font-weight: 700;
-  color: #e11d48;
+  color: var(--on-air);
   letter-spacing: 0.05em;
 }
 
