@@ -24,6 +24,7 @@ function App() {
   const [webcamActive, setWebcamActive] = useState(false)
   const [webcamStatus, setWebcamStatus] = useState('')
   const [frames, setFrames] = useState([])
+  const [recordingUrl, setRecordingUrl] = useState(null)
 
   const [videoId, setVideoId] = useState(null)
   const [playerReady, setPlayerReady] = useState(false)
@@ -47,6 +48,9 @@ function App() {
   const canvasRef = useRef(null)
   const streamRef = useRef(null)
   const intervalRef = useRef(null)
+  const recorderRef = useRef(null)
+  const recordedChunksRef = useRef([])
+  const recordingUrlRef = useRef(null)
 
   const ytApiReadyRef = useRef(false)
   const ytContainerRef = useRef(null)
@@ -79,12 +83,31 @@ function App() {
       if (videoRef.current) videoRef.current.srcObject = stream
       setWebcamActive(true)
 
+      if (recordingUrlRef.current) {
+        URL.revokeObjectURL(recordingUrlRef.current)
+        recordingUrlRef.current = null
+        setRecordingUrl(null)
+      }
+      recordedChunksRef.current = []
+      const recorder = new MediaRecorder(stream)
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) recordedChunksRef.current.push(event.data)
+      }
+      recorder.onstop = () => {
+        const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' })
+        const url = URL.createObjectURL(blob)
+        recordingUrlRef.current = url
+        setRecordingUrl(url)
+      }
+      recorder.start()
+      recorderRef.current = recorder
+
       const duration = metadataRef.current?.durationSeconds
       const captureIntervalMs = duration
         ? Math.max(2000, Math.round((duration * 1000) / MAX_FRAMES))
         : FALLBACK_CAPTURE_INTERVAL_MS
 
-      setWebcamStatus(`Webcam on — capturing up to ${MAX_FRAMES} frames spaced across the video.`)
+      setWebcamStatus(`Webcam on — recording your whole reaction and capturing up to ${MAX_FRAMES} frames spaced across the video.`)
       intervalRef.current = setInterval(captureFrame, captureIntervalMs)
     } catch (error) {
       setWebcamStatus(error.message || 'Could not access the webcam.')
@@ -96,6 +119,10 @@ function App() {
       clearInterval(intervalRef.current)
       intervalRef.current = null
     }
+    if (recorderRef.current && recorderRef.current.state !== 'inactive') {
+      recorderRef.current.stop()
+    }
+    recorderRef.current = null
     if (!streamRef.current) return
 
     streamRef.current.getTracks().forEach((track) => track.stop())
@@ -105,7 +132,13 @@ function App() {
     setWebcamStatus('Webcam off.')
   }
 
-  useEffect(() => stopWebcam, [])
+  useEffect(
+    () => () => {
+      stopWebcam()
+      if (recordingUrlRef.current) URL.revokeObjectURL(recordingUrlRef.current)
+    },
+    [],
+  )
 
   // Load the YouTube IFrame API once.
   useEffect(() => {
@@ -180,6 +213,11 @@ function App() {
     setStatus('Fetching video metadata…')
     setMetadata(null)
     setFrames([])
+    if (recordingUrlRef.current) {
+      URL.revokeObjectURL(recordingUrlRef.current)
+      recordingUrlRef.current = null
+    }
+    setRecordingUrl(null)
     setVisualEvaluation(null)
     setEvalStatus('')
     setInterviewStarted(false)
@@ -345,6 +383,13 @@ function App() {
       />
       <canvas ref={canvasRef} style={{ display: 'none' }} />
 
+      {recordingUrl && (
+        <div style={{ marginTop: '1rem' }}>
+          <h3>Your whole reaction clip</h3>
+          <video src={recordingUrl} controls style={{ width: '100%', maxWidth: 480, borderRadius: 6 }} />
+        </div>
+      )}
+
       {frames.length > 0 && (
         <div>
           <h3>Captured frames ({frames.length}/{MAX_FRAMES})</h3>
@@ -381,59 +426,67 @@ function App() {
 
       <h1>Interview</h1>
 
-      <button type="button" onClick={handleStartInterview} disabled={!visualEvaluation || chatSending}>
-        Start Interview
-      </button>
-      <p>{chatStatus}</p>
-
-      {interviewStarted && (
-        <div style={{ marginTop: '1rem' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {chatMessages.map((message, index) => (
-              <div
-                key={index}
-                style={{
-                  alignSelf: message.role === 'user' ? 'flex-end' : 'flex-start',
-                  background: message.role === 'user' ? '#2a4' : '#333',
-                  color: '#fff',
-                  padding: '0.5rem 0.75rem',
-                  borderRadius: 8,
-                  maxWidth: '80%',
-                }}
-              >
-                {message.content}
-              </div>
-            ))}
-          </div>
-
-          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
-            <input
-              type="text"
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleSendChat()
-              }}
-              placeholder="Type your reply…"
-              style={{ flex: 1, padding: '0.5rem' }}
-              disabled={chatSending}
+      <div className="podcast-card">
+        <div className="podcast-header">
+          {videoId && (
+            <img
+              className="podcast-cover"
+              src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
+              alt="Episode cover art"
             />
-            <button type="button" onClick={handleSendChat} disabled={chatSending}>
-              Send
-            </button>
+          )}
+          <div className="podcast-meta">
+            <p className="podcast-eyebrow">🎙️ Reel Reactions Podcast</p>
+            <h3 className="podcast-title">{metadata ? `${metadata.title} — Reaction Episode` : 'Untitled Episode'}</h3>
+            {interviewStarted && !finalReport && <span className="on-air-badge">● ON AIR</span>}
           </div>
-
-          <button
-            type="button"
-            onClick={handleEndChat}
-            disabled={chatMessages.length === 0 || synthesizing}
-            style={{ marginTop: '0.75rem' }}
-          >
-            End Chat
-          </button>
-          <p>{synthesisStatus}</p>
         </div>
-      )}
+
+        <button type="button" onClick={handleStartInterview} disabled={!visualEvaluation || chatSending}>
+          🎬 Start Interview
+        </button>
+        <p>{chatStatus}</p>
+
+        {interviewStarted && (
+          <div style={{ marginTop: '1rem' }}>
+            <div className="podcast-chat">
+              {chatMessages.map((message, index) => (
+                <div key={index} className={`podcast-bubble ${message.role === 'user' ? 'guest' : 'host'}`}>
+                  <span className="podcast-speaker">{message.role === 'user' ? '🗣️ You' : '🎙️ Host'}</span>
+                  {message.content}
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+              <input
+                type="text"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSendChat()
+                }}
+                placeholder="Type your reply…"
+                style={{ flex: 1, padding: '0.5rem' }}
+                disabled={chatSending}
+              />
+              <button type="button" onClick={handleSendChat} disabled={chatSending}>
+                Send
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleEndChat}
+              disabled={chatMessages.length === 0 || synthesizing}
+              style={{ marginTop: '0.75rem' }}
+            >
+              🎬 Wrap the Episode
+            </button>
+            <p>{synthesisStatus}</p>
+          </div>
+        )}
+      </div>
 
       <h1>Final Synthesis</h1>
 
