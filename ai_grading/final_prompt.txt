@@ -14,23 +14,30 @@ Transcript: After years of war, no one could stand between my men and home. Not 
 
 VISUAL EVALUATION (from webcam analysis while they watched)
 Overall summary:
-The viewer showed mostly neutral, subdued engagement. He initially looked downward, briefly watched the screen directly, then spent much of the video focused on a colorful object held in front of him. No strong emotional reactions were visible.
+The viewer remained mostly focused on the screen with a neutral, subdued expression. He frequently rested his face on his hand, suggesting a relaxed or contemplative viewing posture. There were no clear smiles, laughter, surprise, or other strong emotional reactions.
 
 Notable moments:
-- 00:03 - Looked downward with a neutral, focused expression.
-- 00:08 - Continued looking down; a very faint smile or softened expression appeared.
-- 00:14 - Looked up toward the screen with slightly widened eyes, appearing attentive.
-- 00:20 - Returned to a neutral expression and downward gaze.
-- 00:25–00:31 - Faced the screen steadily, calm and unsmiling.
-- 00:37–01:34 - Held up a colorful object and looked down at it intently; visible features remained neutral and concentrated.
-- 01:40–01:45 - Turned his gaze down and to the side while continuing to examine the object.
-- 01:51 - Lowered the object and looked directly toward the screen again with a neutral, attentive expression.
+- 00:03–00:09 - Watched attentively with a neutral expression.
+- 00:15–00:26 - Rested cheek on his fist; expression remained calm and subdued.
+- 00:32–00:38 - Sat upright again, maintaining a steady, neutral gaze.
+- 00:43 - Shifted quickly to the side; face briefly blurred by movement.
+- 00:49–01:18 - Returned to resting his cheek on his hand, watching with little visible emotional change.
+- 01:23–01:29 - Touched his forehead and adjusted or scratched his hair while continuing to look toward the screen.
+- 01:35–01:40 - Resumed the cheek-on-hand posture with a neutral expression.
+- 01:46–01:52 - Moved his hand beneath his chin, appearing thoughtful and composed.
 
 INTERVIEW TRANSCRIPT
-Interviewer: Welcome back to **Reel Reactions**—where Christopher Nolan bends time, space, and apparently your attention span! At **0:14**, your eyes widened like the IMAX hype had landed… but by **0:37**, that colorful object became the real epic quest. So what grabbed you about the trailer—and what lost you?
-Viewer: Honestly the visuals hooked me right away, the cinematography looked stunning and epic.
-Interviewer: Oh, absolutely—Nolan basically said, “What if ancient Greece looked expensive enough to bankrupt Poseidon?” **But** around **0:37**, you started studying that colorful object like it held the map back to Ithaca. What lost your attention—was there anything about the trailer you disliked?
-Viewer: Not much really, maybe the pacing felt a bit rushed for a trailer.
-Interviewer: Ah, so it wasn’t boredom—it was sensory whiplash! Nolan had you crossing the Aegean at 2x speed. And at **1:51**, you lowered the object and locked back onto the screen: what pulled you back in at the end?
+Interviewer: Christopher Nolan gave us ancient warfare, impossible odds, and Matt Damon trying to get home—and you gave us The Thinker: IMAX Edition. At 0:15, cheek planted firmly on fist, you looked deeply contemplative. What were you feeling there: totally locked in, cautiously intrigued, or waiting for the trailer to really unleash the gods?
+Viewer: I'm hyped to see how will they make the film out of Homer's story
+Interviewer: Oh, absolutely—Nolan adapting Homer is basically the final boss of "the book was better." Mythic monsters, gods, ten years of bad travel decisions… in IMAX! But at 1:23, you touched your forehead and adjusted your hair like the scale of this adaptation had just hit you. What part of Homer’s story are you most excited to see Nolan tackle?
+Viewer: I'd like to see the part where he met Syren but have't seen there. surprised by the walikng corpes
+Interviewer: The Sirens, yes! Nolan blasting that deadly song through IMAX speakers could have the whole audience steering into the rocks. And walking corpses? Ancient Greece just swerved into zombie horror! You stayed remarkably composed on camera—did that darker supernatural angle excite you, or did it feel out of place for The Odyssey?
+Viewer: yes this is what make it interesting. want to see more of supernatural things and god
+Interviewer: Yes! Give us angry gods, cursed seas, monsters—the full mythological buffet. Yet from 0:49 to 1:18, you were still cool as stone, cheek on hand, while the supernatural chaos unfolded. I've gotta ask: was there anything you didn't like about the trailer, or did it simply hold back too much of the gods and creatures?
+Viewer: it's just nothing showing much with a short trailer. expected to watch the full movie
+Interviewer: Exactly—it's less a trailer and more Nolan sliding a sealed scroll across the table and saying, "July 2026." You're already sold, but it barely showed the gods, Sirens, or monsters. So when the full movie arrives, what's the one supernatural moment it absolutely has to nail for you?
+Viewer: the wrath of Poseidon
+Interviewer: Oh, Poseidon's wrath in IMAX—waves the size of buildings, thunder in your rib cage, Odysseus realizing he has made a terrible enemy. That could be the movie's showstopper. Final verdict: based on this short, secretive teaser, are you seeing The Odyssey opening weekend—and what score do you give the trailer out of 10?
+Viewer: give it 10!
 
 Write a final written sentiment report describing how the viewer felt about the video overall. Integrate what they said in the interview with what was observed visually. Structure it with a short headline sentiment on its own line, then supporting detail in plain paragraphs. Do not use markdown syntax (no #, *, or **) — plain text only. Keep it under 300 words.
